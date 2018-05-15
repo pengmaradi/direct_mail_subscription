@@ -5,8 +5,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\DebugUtility;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
+use TYPO3\CMS\Frontend\Plugin\AbstractPlugin;
 
 /***************************************************************
 *  Copyright notice
@@ -141,7 +141,7 @@ class LegacyPi1Controller extends AbstractPlugin
      */
     public function init($content, $conf)
     {
-        die('die: '.__METHOD__);
+
         $this->conf = $conf;
 
             // template file is fetched.
@@ -868,7 +868,12 @@ class LegacyPi1Controller extends AbstractPlugin
                     $newFieldList = implode(',', array_intersect(explode(',', $this->fieldList), GeneralUtility::trimExplode(',', $this->conf['edit.']['fields'], 1)));
                     if ($this->aCAuth($origArr) || $this->cObj->DBmayFEUserEdit($this->theTable, $origArr, $GLOBALS['TSFE']->fe_user->user, $this->conf['allowedGroups'], $this->conf['fe_userEditSelf'])) {
 
-                        $this->cObj->DBgetUpdate($this->theTable, $theUid, $this->dataArr, $newFieldList, true);
+                        //$this->cObj->DBgetUpdate($this->theTable, $theUid, $this->dataArr, $newFieldList, true);
+                        $GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+                                $this->theTable,
+                                'uid = '.$theUid,
+                                $this->dataArr
+                            );
                         $this->currentArr = $GLOBALS['TSFE']->sys_page->getRawRecord($this->theTable, $theUid);
                         $this->userProcess_alt($this->conf['edit.']['userFunc_afterSave'], $this->conf['edit.']['userFunc_afterSave.'], array('rec' => $this->currentArr, 'origRec' => $origArr));
                         $this->saved = 1;
@@ -880,7 +885,16 @@ class LegacyPi1Controller extends AbstractPlugin
             default:
                 if ($this->conf['create']) {
                     $newFieldList = implode(',', array_intersect(explode(',', $this->fieldList), GeneralUtility::trimExplode(',', $this->conf['create.']['fields'], 1)));
-                    $this->cObj->DBgetInsert($this->theTable, $this->thePid, $this->dataArr, $newFieldList, true);
+                    //$this->cObj->DBgetInsert($this->theTable, $this->thePid, $this->dataArr, $newFieldList, true);
+                    $this->dataArr['pid'] = $this->thePid;
+                    // echo $GLOBALS['TYPO3_DB']->INSERTquery(
+                    //     $this->theTable, $this->dataArr
+                    // );
+                    $GLOBALS['TYPO3_DB']->exec_INSERTquery(
+                        $this->theTable, $this->dataArr
+                    );
+
+
                     $newId = $GLOBALS['TYPO3_DB']->sql_insert_id();
 
                     if ($this->theTable == 'fe_users' && $this->conf['fe_userOwnSelf']) {
@@ -899,7 +913,12 @@ class LegacyPi1Controller extends AbstractPlugin
                             $extraList .= ','.$field;
                         }
                         if (count($dataArr)) {
-                            $this->cObj->DBgetUpdate($this->theTable, $newId, $dataArr, $extraList, true);
+                            //$this->cObj->DBgetUpdate($this->theTable, $newId, $dataArr, $extraList, true);
+                            $GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+                                $this->theTable,
+                                'uid = '.$newId,
+                                $dataArr
+                            );
                         }
                     }
 
@@ -939,7 +958,11 @@ class LegacyPi1Controller extends AbstractPlugin
                             // If the record is fully deleted... then remove the image (or any file) attached.
                             $this->deleteFilesFromRecord($this->recUid);
                         }
-                        $this->cObj->DBgetDelete($this->theTable, $this->recUid, true);
+                        //$this->cObj->DBgetDelete($this->theTable, $this->recUid, true);
+                        $GLOBALS['TYPO3_DB']->exec_DELETEquery(
+                            $this->theTable,
+                            'uid = '.$this->recUid
+                        );
                         $this->currentArr = $origArr;
                         $this->saved = 1;
                     } else {
@@ -1235,11 +1258,20 @@ class LegacyPi1Controller extends AbstractPlugin
                 $theCode = $this->setfixedHash($origArr, $origArr['_FIELDLIST']);
                 if (!strcmp($this->authCode, $theCode)) {
                     if ($sFK == 'DELETE') {
-                        $this->cObj->DBgetDelete($this->theTable, $theUid, true);
+                        //$this->cObj->DBgetDelete($this->theTable, $theUid, true);
+                        $GLOBALS['TYPO3_DB']->exec_DELETEquery(
+                                $this->theTable,
+                                'uid = '.$theUid
+                            );
                     } else {
                         $newFieldList = implode(',', array_intersect(GeneralUtility::trimExplode(',', $this->fieldList), GeneralUtility::trimExplode(',', implode($fieldArr, ','), 1)));
                         unset($valuesConfiguredInTypoScript['_FIELDLIST']);
-                        $this->cObj->DBgetUpdate($this->theTable, $theUid, $valuesConfiguredInTypoScript, $newFieldList, true);
+                        //$this->cObj->DBgetUpdate($this->theTable, $theUid, $valuesConfiguredInTypoScript, $newFieldList, true);
+                        $GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+                                $this->theTable,
+                                'uid = '.$theUid,
+                                $valuesConfiguredInTypoScript
+                            );
 
                         $this->currentArr = $GLOBALS['TSFE']->sys_page->getRawRecord($this->theTable, $theUid);
                         $this->userProcess_alt($this->conf['setfixed.']['userFunc_afterSave'], $this->conf['setfixed.']['userFunc_afterSave.'], array('rec' => $this->currentArr, 'origRec' => $origArr));
@@ -1887,10 +1919,11 @@ class LegacyPi1Controller extends AbstractPlugin
     }
 
     /**
-     * @return object TYPO3\CMS\Core\TimeTracker
+     * @return object TYPO3\CMS\Core\TimeTracker\TimeTracker
      */
     protected function getTimeTracker()
     {
+        $GLOBALS['TT'] = GeneralUtility::makeInstance(\TYPO3\CMS\Core\TimeTracker\TimeTracker::class);
         return $GLOBALS['TT'];
     }
 }
