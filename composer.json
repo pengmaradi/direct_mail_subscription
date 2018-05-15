@@ -24,7 +24,8 @@
   },
   "require": {
     "typo3/cms-core": ">=7",
-    "friendsoftypo3/tt-address": ">=4"
+    "friendsoftypo3/tt-address": ">=4",
+    "directmailteam/direct-mail": ">=5"
   },
   "autoload": {
     "psr-4": {
