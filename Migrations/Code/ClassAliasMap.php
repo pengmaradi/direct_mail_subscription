@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'feadmin.dmailsubscription' => \DirectMailTeam\DirectMailSubscription\Controller\LegacyPi1Controller::class
+    'user_feAdmin' => \DirectMailTeam\DirectMailSubscription\Controller\LegacyPi1Controller::class
 ];
