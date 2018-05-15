@@ -15,7 +15,7 @@ $EM_CONF[$_EXTKEY] = array(
     'description' => 'Adds a plugin for subscription to direct mail newsletters (collecting subscriptions in the tt_address table)',
     'category' => 'plugin',
     'shy' => 0,
-    'version' => '2.0.3',
+    'version' => '3.0.0',
     'dependencies' => '',
     'conflicts' => '',
     'priority' => '',
@@ -34,8 +34,9 @@ $EM_CONF[$_EXTKEY] = array(
     'CGLcompliance_note' => '',
     'constraints' => array(
         'depends' => array(
-            'tt_address' => '',
             'typo3' => '7.6.0-8.9.99',
+            'tt_address' => '4.0.0',
+            'direct_mail' => '5.0.0',
         ),
         'conflicts' => array(
         ),
